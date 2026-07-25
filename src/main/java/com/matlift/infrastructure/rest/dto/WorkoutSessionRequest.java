@@ -5,7 +5,7 @@ import com.matlift.domain.model.SessionCategory;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-public record WorkoutRequest(
+public record WorkoutSessionRequest(
         UUID userId,
         ZonedDateTime sessionDate,
         SessionCategory category,

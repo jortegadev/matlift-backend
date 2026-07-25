@@ -1,22 +1,22 @@
 package com.matlift.application.service;
 
 import com.matlift.domain.model.WorkoutSession;
-import com.matlift.domain.port.in.SaveWorkoutCommand;
-import com.matlift.domain.port.in.SaveWorkoutUseCase;
+import com.matlift.domain.port.in.SaveWorkoutSessionCommand;
+import com.matlift.domain.port.in.SaveWorkoutSessionUseCase;
 import com.matlift.domain.port.out.WorkoutSessionRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SaveWorkoutService implements SaveWorkoutUseCase {
+public class SaveWorkoutSessionSessionService implements SaveWorkoutSessionUseCase {
 
     private final WorkoutSessionRepository repository;
 
-    public SaveWorkoutService(WorkoutSessionRepository repository) {
+    public SaveWorkoutSessionSessionService(WorkoutSessionRepository repository) {
         this.repository = repository;
     }
 
     @Override
-    public WorkoutSession execute(SaveWorkoutCommand command) {
+    public WorkoutSession execute(SaveWorkoutSessionCommand command) {
         WorkoutSession session = new WorkoutSession(
                 null,
                 command.userId(),

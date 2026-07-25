@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public interface SpringDataWorkoutRepository extends JpaRepository<WorkoutEntity, UUID> {
+public interface SpringDataWorkoutSessionRepository extends JpaRepository<WorkoutSessionEntity, UUID> {
 
 }

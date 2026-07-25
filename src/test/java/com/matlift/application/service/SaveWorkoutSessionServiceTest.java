@@ -2,7 +2,7 @@ package com.matlift.application.service;
 
 import com.matlift.domain.model.SessionCategory;
 import com.matlift.domain.model.WorkoutSession;
-import com.matlift.domain.port.in.SaveWorkoutCommand;
+import com.matlift.domain.port.in.SaveWorkoutSessionCommand;
 import com.matlift.domain.port.out.WorkoutSessionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,17 +18,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class SaveWorkoutServiceTest {
+class SaveWorkoutSessionServiceTest {
 
     @Mock
     private WorkoutSessionRepository repositoryMock;
 
     @InjectMocks
-    private SaveWorkoutService saveWorkoutService;
+    private SaveWorkoutSessionSessionService saveWorkoutService;
 
     @Test
     void shouldExecuteAndSaveWorkout() {
-        SaveWorkoutCommand command = new SaveWorkoutCommand(
+        SaveWorkoutSessionCommand command = new SaveWorkoutSessionCommand(
                 UUID.randomUUID(), ZonedDateTime.now(), SessionCategory.STRENGTH,
                 "Full body training", 60, 7, ""
         );

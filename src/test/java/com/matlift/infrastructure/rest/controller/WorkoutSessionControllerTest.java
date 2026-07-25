@@ -1,12 +1,12 @@
 package com.matlift.infrastructure.rest.controller;
 
-import com.matlift.application.service.SaveWorkoutService;
+import com.matlift.application.service.SaveWorkoutSessionSessionService;
 import com.matlift.domain.model.SessionCategory;
 import com.matlift.domain.model.WorkoutSession;
-import com.matlift.domain.port.in.SaveWorkoutCommand;
-import com.matlift.infrastructure.rest.dto.WorkoutRequest;
-import com.matlift.infrastructure.rest.dto.WorkoutResponse;
-import com.matlift.infrastructure.rest.mapper.WorkoutRestMapper;
+import com.matlift.domain.port.in.SaveWorkoutSessionCommand;
+import com.matlift.infrastructure.rest.dto.WorkoutSessionRequest;
+import com.matlift.infrastructure.rest.dto.WorkoutSessionResponse;
+import com.matlift.infrastructure.rest.mapper.WorkoutSessionRestMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -23,23 +23,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(WorkoutController.class)
-class WorkoutControllerTest {
+@WebMvcTest(WorkoutSessionController.class)
+class WorkoutSessionControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private SaveWorkoutService saveWorkoutService;
+    private SaveWorkoutSessionSessionService saveWorkoutSessionService;
 
     @MockitoBean
-    private WorkoutRestMapper mapper;
+    private WorkoutSessionRestMapper mapper;
 
     @Test
     void shouldReturn201WhenWorkoutIsValid() throws Exception {
         UUID mockId = UUID.randomUUID();
 
-        SaveWorkoutCommand mockCommand = new SaveWorkoutCommand(
+        SaveWorkoutSessionCommand mockCommand = new SaveWorkoutSessionCommand(
                 UUID.randomUUID(), ZonedDateTime.now(), SessionCategory.STRENGTH, "Pesas", 60, 7, "Test"
         );
 
@@ -49,12 +49,12 @@ class WorkoutControllerTest {
                 mockCommand.durationMinutes(), mockCommand.rpe(), mockCommand.notes()
         );
 
-        WorkoutResponse mockResponse = new WorkoutResponse(
+        WorkoutSessionResponse mockResponse = new WorkoutSessionResponse(
                 mockId, 420, "Workout successfully saved"
         );
 
-        when(mapper.toCommand(any(WorkoutRequest.class))).thenReturn(mockCommand);
-        when(saveWorkoutService.execute(any(SaveWorkoutCommand.class))).thenReturn(mockSession);
+        when(mapper.toCommand(any(WorkoutSessionRequest.class))).thenReturn(mockCommand);
+        when(saveWorkoutSessionService.execute(any(SaveWorkoutSessionCommand.class))).thenReturn(mockSession);
         when(mapper.toResponse(any(WorkoutSession.class))).thenReturn(mockResponse);
 
         String jsonRequest = """
@@ -80,12 +80,12 @@ class WorkoutControllerTest {
 
     @Test
     void shouldReturn400WhenDomainThrowsException() throws Exception {
-        SaveWorkoutCommand mockCommand = new SaveWorkoutCommand(
+        SaveWorkoutSessionCommand mockCommand = new SaveWorkoutSessionCommand(
                 UUID.randomUUID(), ZonedDateTime.now(), SessionCategory.STRENGTH, "Workout", 60, 15, null
         );
 
-        when(mapper.toCommand(any(WorkoutRequest.class))).thenReturn(mockCommand);
-        when(saveWorkoutService.execute(any(SaveWorkoutCommand.class)))
+        when(mapper.toCommand(any(WorkoutSessionRequest.class))).thenReturn(mockCommand);
+        when(saveWorkoutSessionService.execute(any(SaveWorkoutSessionCommand.class)))
                 .thenThrow(new IllegalArgumentException("RPE must be between 1 and 10"));
 
         String jsonConRpeInvalido = """

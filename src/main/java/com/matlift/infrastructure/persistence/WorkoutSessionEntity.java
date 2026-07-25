@@ -16,7 +16,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkoutEntity {
+public class WorkoutSessionEntity {
 
     @Id
     private UUID id;
