@@ -4,6 +4,5 @@ import java.util.UUID;
 
 public record WorkoutSessionResponse(
         UUID id,
-        int internalLoad,
-        String message
+        int internalLoad
 ) {}

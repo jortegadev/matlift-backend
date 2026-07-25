@@ -2,7 +2,6 @@ package com.matlift.infrastructure.persistence.adapter;
 
 import com.matlift.domain.model.SessionCategory;
 import com.matlift.domain.model.WorkoutSession;
-import com.matlift.infrastructure.adapter.WorkoutSessionPersistenceAdapter;
 import com.matlift.infrastructure.persistence.mapper.WorkoutSessionPersistenceMapperImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

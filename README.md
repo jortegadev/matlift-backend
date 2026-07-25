@@ -6,10 +6,12 @@ Currently, the domain core focuses on sports performance tracking, allowing user
 
 ## Tech Stack
 
-*   **Language:** Java 17+
-*   **Framework:** Spring Boot 3
+*   **Language:** Java 21+
+*   **Framework:** Spring Boot 4
 *   **Database:** PostgreSQL
 *   **Persistence:** Spring Data JPA / Hibernate
+*   **Migrations:** Flyway
+*   **Mapping:** MapStruct
 *   **Testing:** JUnit 5, Mockito, AssertJ, H2 (In-memory DB)
 *   **Dependency Manager:** Maven
 
@@ -22,12 +24,12 @@ The project utilizes a package structure based on Clean/Hexagonal Architecture, 
 *   **Workout Logging:** REST endpoint to create training sessions detailing category, duration, and RPE.
 *   **Automatic Load Calculation:** The domain automatically calculates the internal load (`RPE * minutes`) upon creation.
 *   **Domain Validations:** Pure business rules (e.g., ensuring RPE is strictly within a 1-10 scale) protected against invalid states.
-*   **Global Exception Handling:** Translates domain-specific exceptions into clear HTTP responses (400 Bad Request) using `@RestControllerAdvice`.
+*   **Global Exception Handling:** Translates domain-specific exceptions into clear HTTP responses (400 Bad Request, 404 Not Found, 409 Conflict) using `@RestControllerAdvice`.
 
 ## Installation & Setup
 
 ### Prerequisites
-*   Java JDK 17 or higher.
+*   Java JDK 21 or higher.
 *   PostgreSQL installed and running.
 *   Maven.
 
@@ -35,17 +37,16 @@ The project utilizes a package structure based on Clean/Hexagonal Architecture, 
 
 1. Clone the repository:
 ```bash
-git clone [https://github.com/jortegadev/matlift-backend.git](https://github.com/jortegadev/matlift-backend.git)
+git clone https://github.com/jortegadev/matlift-backend.git
 ```
 
-2. Configure the PostgreSQL database. Make sure to set up your credentials in the `application.properties` or `application.yml` file:
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/matlift_db
-spring.datasource.username=your_username
-spring.datasource.password=your_password
+2. `application.yml` points at `jdbc:postgresql://localhost:5432/matlift_db` and reads credentials from environment variables:
+```bash
+export DB_USERNAME=your_username
+export DB_PASSWORD=your_password
 ```
 
-3. Run the application:
+3. Run the application. Flyway applies the schema migrations from `src/main/resources/db/migration` automatically on startup:
 ```bash
 mvn spring-boot:run
 ```
@@ -86,7 +87,15 @@ mvn test
 ```json
 {
     "id": "a89da16b-f4c6-4b75-8c2b-5a95623a2ead",
-    "internalLoad": 720,
-    "message": "Workout successfully saved"
+    "internalLoad": 720
 }
 ```
+
+**Error responses:**
+
+| Status | Cause | Body |
+| --- | --- | --- |
+| 400 Bad Request | Missing required field | `{"error": "Validation failed", "fields": {"rpe": "is required"}}` |
+| 400 Bad Request | Business rule violated | `{"error": "RPE must be between 1 and 10"}` |
+| 404 Not Found | `userId` does not exist | `{"error": "User <id> does not exist"}` |
+| 409 Conflict | Database constraint violated | `{"error": "Request violates a data integrity constraint"}` |

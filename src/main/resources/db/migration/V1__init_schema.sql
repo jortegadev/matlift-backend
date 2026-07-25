@@ -1,4 +1,5 @@
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE
+EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE users
 (
@@ -31,8 +32,7 @@ CREATE TABLE workout_sessions
     duration_minutes INT                      NOT NULL CHECK (duration_minutes > 0),
     rpe              INT                      NOT NULL CHECK (rpe BETWEEN 1 AND 10),
     internal_load    INT                      NOT NULL, -- Calculado (duration * rpe)
-    notes            TEXT,
-
+    notes            VARCHAR(1000),
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

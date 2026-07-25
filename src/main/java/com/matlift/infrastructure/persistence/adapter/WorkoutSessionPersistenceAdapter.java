@@ -1,4 +1,4 @@
-package com.matlift.infrastructure.adapter;
+package com.matlift.infrastructure.persistence.adapter;
 
 import com.matlift.domain.model.WorkoutSession;
 import com.matlift.domain.port.out.WorkoutSessionRepository;

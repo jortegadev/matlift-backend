@@ -9,6 +9,9 @@ import java.util.UUID;
 
 @Getter
 public class WorkoutSession {
+
+    private static final int MAX_NOTES_LENGTH = 1000;
+
     private final UUID id;
     private final UUID userId;
 
@@ -32,6 +35,12 @@ public class WorkoutSession {
         if (durationMinutes <= 0) throw new IllegalArgumentException("Duration must be greater than 0");
         if (activityName == null || activityName.trim().isEmpty()) {
             throw new IllegalArgumentException("Activity name is required");
+        }
+        if (userId == null) throw new IllegalArgumentException("User id is required");
+        if (sessionDate == null) throw new IllegalArgumentException("Session date is required");
+        if (category == null) throw new IllegalArgumentException("Category is required");
+        if (notes != null && notes.length() > MAX_NOTES_LENGTH) {
+            throw new IllegalArgumentException("Notes must be at most " + MAX_NOTES_LENGTH + " characters");
         }
 
         this.id = id != null ? id : UUID.randomUUID();

@@ -36,4 +36,71 @@ class WorkoutSessionTest {
         ).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("10");
     }
+
+    @Test
+    void shouldThrowExceptionWhenUserIdIsNull() {
+        ZonedDateTime date = ZonedDateTime.now();
+
+        assertThatThrownBy(() ->
+                new WorkoutSession(
+                        null, null, date, SessionCategory.CONTACT_SPORT,
+                        "BJJ", 90, 8, null
+                )
+        ).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("User id");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenSessionDateIsNull() {
+        UUID userId = UUID.randomUUID();
+
+        assertThatThrownBy(() ->
+                new WorkoutSession(
+                        null, userId, null, SessionCategory.CONTACT_SPORT,
+                        "BJJ", 90, 8, null
+                )
+        ).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Session date");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenCategoryIsNull() {
+        UUID userId = UUID.randomUUID();
+        ZonedDateTime date = ZonedDateTime.now();
+
+        assertThatThrownBy(() ->
+                new WorkoutSession(
+                        null, userId, date, null,
+                        "BJJ", 90, 8, null
+                )
+        ).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Category");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenNotesExceedMaxLength() {
+        UUID userId = UUID.randomUUID();
+        ZonedDateTime date = ZonedDateTime.now();
+        String tooLongNotes = "x".repeat(1001);
+
+        assertThatThrownBy(() ->
+                new WorkoutSession(
+                        null, userId, date, SessionCategory.CONTACT_SPORT,
+                        "BJJ", 90, 8, tooLongNotes
+                )
+        ).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("1000");
+    }
+
+    @Test
+    void shouldAcceptNotesAtMaxLength() {
+        String notesAtLimit = "x".repeat(1000);
+
+        WorkoutSession session = new WorkoutSession(
+                null, UUID.randomUUID(), ZonedDateTime.now(), SessionCategory.CONTACT_SPORT,
+                "BJJ", 90, 8, notesAtLimit
+        );
+
+        assertThat(session.getNotes()).hasSize(1000);
+    }
 }
