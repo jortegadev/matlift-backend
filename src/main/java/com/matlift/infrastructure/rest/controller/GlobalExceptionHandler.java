@@ -1,6 +1,7 @@
 package com.matlift.infrastructure.rest.controller;
 
 import com.matlift.domain.exception.UserNotFoundException;
+import com.matlift.domain.exception.WorkoutSessionNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleUserNotFoundException(UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    @ExceptionHandler(WorkoutSessionNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleWorkoutSessionNotFoundException(WorkoutSessionNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_KEY, ex.getMessage()));
     }
 
