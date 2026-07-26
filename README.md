@@ -58,7 +58,9 @@ The project features a well-balanced testing pyramid to ensure code reliability 
 *   **Domain Tests:** Pure, blazing-fast unit tests for core business logic.
 *   **Use Case Tests:** Leveraging `Mockito` to isolate the application layer.
 *   **Web Integration Tests:** `@WebMvcTest` to simulate HTTP requests and validate REST responses.
-*   **Persistence Tests:** `@DataJpaTest` using an in-memory database (H2) to validate entity mapping and repository operations.
+*   **Persistence Tests:** `@DataJpaTest` backed by a real PostgreSQL container (Testcontainers), running the actual Flyway migrations with `ddl-auto: validate` — the same schema and dialect as production.
+
+Running the suite requires a local Docker daemon (Docker Desktop or equivalent). All database-backed tests share a single PostgreSQL container for the whole run via `AbstractIntegrationTest`.
 
 To run the entire test suite:
 ```bash

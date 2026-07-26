@@ -1,5 +1,6 @@
 package com.matlift.infrastructure.persistence.adapter;
 
+import com.matlift.AbstractIntegrationTest;
 import com.matlift.domain.model.PagedResult;
 import com.matlift.domain.model.SessionCategory;
 import com.matlift.domain.model.WorkoutSession;
@@ -7,6 +8,7 @@ import com.matlift.infrastructure.persistence.mapper.WorkoutSessionPersistenceMa
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 
 import java.time.ZonedDateTime;
@@ -16,16 +18,19 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({WorkoutSessionPersistenceAdapter.class, WorkoutSessionPersistenceMapperImpl.class})
-class WorkoutSessionPersistenceAdapterTest {
+class WorkoutSessionPersistenceAdapterTest extends AbstractIntegrationTest {
 
     @Autowired
     private WorkoutSessionPersistenceAdapter adapter;
 
     @Test
     void shouldSaveAndRetrieveWorkoutSession() {
+        UUID userId = createTestUser();
+
         WorkoutSession sessionToSave = new WorkoutSession(
-                null, UUID.randomUUID(), ZonedDateTime.now(), SessionCategory.CONTACT_SPORT,
+                null, userId, ZonedDateTime.now(), SessionCategory.CONTACT_SPORT,
                 "BJJ NoGi", 120, 8, "Open mat session"
         );
 
@@ -42,7 +47,9 @@ class WorkoutSessionPersistenceAdapterTest {
 
     @Test
     void shouldReportWhetherSessionExistsAndDeleteIt() {
-        WorkoutSession saved = adapter.save(newSession(UUID.randomUUID(), ZonedDateTime.now()));
+        UUID userId = createTestUser();
+
+        WorkoutSession saved = adapter.save(newSession(userId, ZonedDateTime.now()));
 
         assertThat(adapter.existsById(saved.getId())).isTrue();
 
@@ -54,8 +61,8 @@ class WorkoutSessionPersistenceAdapterTest {
 
     @Test
     void shouldFindSessionsOfOneUserOnlyMostRecentFirst() {
-        UUID userId = UUID.randomUUID();
-        UUID otherUserId = UUID.randomUUID();
+        UUID userId = createTestUser();
+        UUID otherUserId = createTestUser();
         ZonedDateTime now = ZonedDateTime.now();
 
         adapter.save(newSession(userId, now.minusDays(2)));
@@ -77,7 +84,7 @@ class WorkoutSessionPersistenceAdapterTest {
 
     @Test
     void shouldFilterByDateRange() {
-        UUID userId = UUID.randomUUID();
+        UUID userId = createTestUser();
         ZonedDateTime now = ZonedDateTime.now();
 
         adapter.save(newSession(userId, now.minusDays(10)));
@@ -93,7 +100,7 @@ class WorkoutSessionPersistenceAdapterTest {
 
     @Test
     void shouldApplyOpenEndedDateRange() {
-        UUID userId = UUID.randomUUID();
+        UUID userId = createTestUser();
         ZonedDateTime now = ZonedDateTime.now();
 
         adapter.save(newSession(userId, now.minusDays(10)));
@@ -108,7 +115,7 @@ class WorkoutSessionPersistenceAdapterTest {
 
     @Test
     void shouldPaginateResults() {
-        UUID userId = UUID.randomUUID();
+        UUID userId = createTestUser();
         ZonedDateTime now = ZonedDateTime.now();
 
         for (int i = 0; i < 5; i++) {
