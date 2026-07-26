@@ -1,4 +1,4 @@
-# MATlift Backend API
+# MatLift Backend API
 
 A RESTful API developed in Java and Spring Boot for workout and event management. This project is strictly designed following **Clean Architecture** and **Domain-Driven Design (DDD)** principles.
 
@@ -67,6 +67,14 @@ mvn test
 
 ## API Documentation
 
+| Method | Path | Description |
+| --- | --- | --- |
+| `POST` | `/api/workouts` | Create a workout session |
+| `GET` | `/api/workouts/{id}` | Fetch a single session |
+| `GET` | `/api/workouts` | List a user's sessions, paginated and newest first |
+| `PUT` | `/api/workouts/{id}` | Replace a session's data |
+| `DELETE` | `/api/workouts/{id}` | Delete a session |
+
 ### Create Workout Session
 `POST /api/workouts`
 
@@ -83,13 +91,43 @@ mvn test
 }
 ```
 
-**Response (201 Created):**
+**Response (201 Created):** the full resource representation, same shape returned by `GET` and `PUT`.
 ```json
 {
     "id": "a89da16b-f4c6-4b75-8c2b-5a95623a2ead",
-    "internalLoad": 720
+    "userId": "123e4567-e89b-12d3-a456-426614174000",
+    "sessionDate": "2026-07-24T18:30:00Z",
+    "category": "CONTACT_SPORT",
+    "activityName": "BJJ Gi",
+    "durationMinutes": 90,
+    "rpe": 8,
+    "internalLoad": 720,
+    "notes": "Guard passing focused session."
 }
 ```
+
+### List Workout Sessions
+`GET /api/workouts?userId={uuid}&from={iso}&to={iso}&page=0&size=20`
+
+`userId` is required; `from` and `to` are optional and may be used independently. Results are ordered by `sessionDate` descending.
+
+```json
+{
+    "content": [ { "id": "...", "internalLoad": 720 } ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 3,
+    "totalPages": 1
+}
+```
+
+### Update Workout Session
+`PUT /api/workouts/{id}`
+
+Same body as `POST` but **without** `userId` — a session's owner never changes. `internalLoad` is recalculated from the new duration and RPE.
+
+### Delete Workout Session
+`DELETE /api/workouts/{id}` — returns `204 No Content`, or `404` if the session does not exist.
 
 **Error responses:**
 

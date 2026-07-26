@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -32,8 +30,7 @@ public class WorkoutSessionEntity {
     private ZonedDateTime sessionDate;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "category", nullable = false, length = 50)
+    @Column(name = "category", nullable = false, columnDefinition = "varchar(50)")
     private SessionCategory category;
 
     @Column(name = "activity_name", nullable = false, length = 100)
