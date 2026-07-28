@@ -4,4 +4,6 @@ import com.matlift.user.domain.model.RawPassword;
 
 public interface PasswordHasher {
     String hash(RawPassword rawPassword);
+
+    boolean matches(RawPassword rawPassword, String passwordHash);
 }

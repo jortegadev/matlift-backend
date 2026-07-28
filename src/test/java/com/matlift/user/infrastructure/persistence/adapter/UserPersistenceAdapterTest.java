@@ -45,6 +45,32 @@ class UserPersistenceAdapterTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldFindSavedUserByEmail() {
+        User saved = adapter.save(new User(null, "buscame@matlift.com", "hashed-secret"));
+
+        assertThat(adapter.findByEmail("buscame@matlift.com"))
+                .isPresent()
+                .get()
+                .satisfies(found -> {
+                    assertThat(found.getId()).isEqualTo(saved.getId());
+                    assertThat(found.getEmail()).isEqualTo("buscame@matlift.com");
+                    assertThat(found.getPasswordHash()).isEqualTo("hashed-secret");
+                });
+    }
+
+    @Test
+    void shouldReturnEmptyWhenEmailIsNotRegistered() {
+        assertThat(adapter.findByEmail("nadie@matlift.com")).isEmpty();
+    }
+
+    @Test
+    void shouldNotFindUserWhenEmailCasingDiffers() {
+        adapter.save(new User(null, "atleta@matlift.com", "hashed-secret"));
+
+        assertThat(adapter.findByEmail("ATLETA@MatLift.COM")).isEmpty();
+    }
+
+    @Test
     void shouldRejectDuplicateEmailAtDatabaseLevel() {
         adapter.save(new User(null, "duplicado@matlift.com", "hash"));
         adapter.save(new User(null, "duplicado@matlift.com", "hash"));

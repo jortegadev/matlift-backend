@@ -48,4 +48,45 @@ class BCryptPasswordHasherTest {
 
         assertThat(hash).startsWith("$2a$").hasSizeLessThanOrEqualTo(255);
     }
+
+    @Test
+    void shouldMatchTheOriginalPassword() {
+        RawPassword password = new RawPassword("correct horse battery staple");
+
+        String hash = hasher.hash(password);
+
+        assertThat(hasher.matches(password, hash)).isTrue();
+    }
+
+    @Test
+    void shouldNotMatchADifferentPassword() {
+        String hash = hasher.hash(new RawPassword("correct horse battery staple"));
+
+        assertThat(hasher.matches(new RawPassword("another password"), hash)).isFalse();
+    }
+
+    @Test
+    void shouldNotMatchWhenPasswordDiffersOnlyInCase() {
+        String hash = hasher.hash(new RawPassword("CorrectHorseBattery"));
+
+        assertThat(hasher.matches(new RawPassword("correcthorsebattery"), hash)).isFalse();
+    }
+
+    @Test
+    void shouldNotMatchWhenHashIsNull() {
+        assertThat(hasher.matches(new RawPassword("correct horse battery staple"), null)).isFalse();
+    }
+
+    @Test
+    void shouldNotMatchWhenRawPasswordIsNull() {
+        String hash = hasher.hash(new RawPassword("correct horse battery staple"));
+
+        assertThat(hasher.matches(null, hash)).isFalse();
+    }
+
+    @Test
+    void shouldNotMatchWhenHashIsNotBCrypt() {
+        assertThat(hasher.matches(new RawPassword("correct horse battery staple"), "not-a-bcrypt-hash"))
+                .isFalse();
+    }
 }
