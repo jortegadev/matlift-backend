@@ -1,5 +1,6 @@
 package com.matlift.shared.infrastructure.rest;
 
+import com.matlift.user.domain.exception.UserAlreadyExistsException;
 import com.matlift.user.domain.exception.UserNotFoundException;
 import com.matlift.workout.domain.exception.WorkoutSessionNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -42,8 +43,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_KEY, ex.getMessage()));
     }
 
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException() {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of(ERROR_KEY, "Request violates a data integrity constraint"));
     }
