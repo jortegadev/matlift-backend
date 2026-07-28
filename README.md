@@ -71,11 +71,35 @@ mvn test
 
 | Method | Path | Description |
 | --- | --- | --- |
+| `POST` | `/api/users` | Register a user |
 | `POST` | `/api/workouts` | Create a workout session |
 | `GET` | `/api/workouts/{id}` | Fetch a single session |
 | `GET` | `/api/workouts` | List a user's sessions, paginated and newest first |
 | `PUT` | `/api/workouts/{id}` | Replace a session's data |
 | `DELETE` | `/api/workouts/{id}` | Delete a session |
+
+### Register User
+`POST /api/users`
+
+**Request Body:**
+```json
+{
+    "email": "atleta@matlift.com",
+    "password": "supersecret"
+}
+```
+
+Passwords must be at least 8 characters and are stored as a BCrypt hash — never in plain text, and never returned by any endpoint. Emails are normalized to lowercase, so `Atleta@MatLift.com` and `atleta@matlift.com` are the same account.
+
+**Response (201 Created):**
+```json
+{
+    "id": "b98a966c-8214-4c29-8cb5-567865768541",
+    "email": "atleta@matlift.com"
+}
+```
+
+Returns `409 Conflict` if the email is already registered.
 
 ### Create Workout Session
 `POST /api/workouts`
