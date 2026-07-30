@@ -5,3 +5,9 @@ spring:
       ddl-auto: validate
     open-in-view: false
     show-sql: true
+
+matlift:
+  security:
+    jwt:
+      secret: test-only-secret-that-is-long-enough-for-hmac-sha256
+      expiry: 24h

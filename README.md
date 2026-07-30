@@ -40,11 +40,14 @@ The project utilizes a package structure based on Clean/Hexagonal Architecture, 
 git clone https://github.com/jortegadev/matlift-backend.git
 ```
 
-2. `application.yml` points at `jdbc:postgresql://localhost:5432/matlift_db` and reads credentials from environment variables:
+2. `application.yml` points at `jdbc:postgresql://localhost:5432/matlift_db` and reads credentials and the JWT signing secret from environment variables:
 ```bash
 export DB_USERNAME=your_username
 export DB_PASSWORD=your_password
+export JWT_SECRET=at-least-32-bytes-long-random-secret
 ```
+
+`JWT_SECRET` has no default on purpose — a signing secret committed to the repository would let anyone forge tokens. It must be at least 32 bytes, as required by HMAC-SHA256, and the application refuses to start otherwise.
 
 3. Run the application. Flyway applies the schema migrations from `src/main/resources/db/migration` automatically on startup:
 ```bash
