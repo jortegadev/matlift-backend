@@ -24,7 +24,7 @@ public class User {
             throw new IllegalArgumentException("Password hash is required");
         }
 
-        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = normalizeEmail(email);
 
         if (normalizedEmail.length() > MAX_EMAIL_LENGTH) {
             throw new IllegalArgumentException("Email must be at most " + MAX_EMAIL_LENGTH + " characters");
@@ -36,5 +36,9 @@ public class User {
         this.id = id != null ? id : UUID.randomUUID();
         this.email = normalizedEmail;
         this.passwordHash = passwordHash;
+    }
+
+    public static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 }

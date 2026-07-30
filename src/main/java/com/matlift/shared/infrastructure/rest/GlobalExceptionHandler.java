@@ -1,5 +1,6 @@
 package com.matlift.shared.infrastructure.rest;
 
+import com.matlift.user.domain.exception.InvalidCredentialsException;
 import com.matlift.user.domain.exception.UserAlreadyExistsException;
 import com.matlift.user.domain.exception.UserNotFoundException;
 import com.matlift.workout.domain.exception.WorkoutSessionNotFoundException;
@@ -41,6 +42,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(WorkoutSessionNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleWorkoutSessionNotFoundException(WorkoutSessionNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidCredentialsException(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(ERROR_KEY, ex.getMessage()));
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)

@@ -75,6 +75,7 @@ mvn test
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/users` | Register a user |
+| `POST` | `/api/auth/login` | Exchange credentials for an access token |
 | `POST` | `/api/workouts` | Create a workout session |
 | `GET` | `/api/workouts/{id}` | Fetch a single session |
 | `GET` | `/api/workouts` | List a user's sessions, paginated and newest first |
@@ -103,6 +104,30 @@ Passwords must be at least 8 characters and are stored as a BCrypt hash — neve
 ```
 
 Returns `409 Conflict` if the email is already registered.
+
+### Login
+`POST /api/auth/login`
+
+**Request Body:**
+```json
+{
+    "email": "atleta@matlift.com",
+    "password": "supersecret"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresAt": "2026-07-31T14:38:58Z"
+}
+```
+
+The token is signed with HMAC-SHA256 and carries the user id as its subject. It is valid for 24 hours; there is no refresh token, so clients log in again once it expires.
+
+Any failed attempt returns `401 Unauthorized` with the same body — an unknown email and a wrong password are indistinguishable, so the endpoint cannot be used to discover which addresses are registered.
 
 ### Create Workout Session
 `POST /api/workouts`

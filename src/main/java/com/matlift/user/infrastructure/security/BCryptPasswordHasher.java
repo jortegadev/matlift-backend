@@ -16,11 +16,11 @@ public class BCryptPasswordHasher implements PasswordHasher {
     }
 
     @Override
-    public boolean matches(RawPassword rawPassword, String passwordHash) {
-        if (rawPassword == null || passwordHash == null) {
+    public boolean matches(String candidatePassword, String passwordHash) {
+        if (candidatePassword == null || passwordHash == null) {
             return false;
         }
 
-        return encoder.matches(rawPassword.value(), passwordHash);
+        return encoder.matches(candidatePassword, passwordHash);
     }
 }
