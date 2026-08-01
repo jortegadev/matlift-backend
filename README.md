@@ -83,10 +83,11 @@ A missing, malformed or expired token returns `401 Unauthorized` with `{"error":
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/users` | Register a user |
+| `GET` | `/api/users/me` | Fetch the authenticated user |
 | `POST` | `/api/auth/login` | Exchange credentials for an access token |
 | `POST` | `/api/workouts` | Create a workout session |
 | `GET` | `/api/workouts/{id}` | Fetch a single session |
-| `GET` | `/api/workouts` | List a user's sessions, paginated and newest first |
+| `GET` | `/api/workouts` | List your own sessions, paginated and newest first |
 | `PUT` | `/api/workouts/{id}` | Replace a session's data |
 | `DELETE` | `/api/workouts/{id}` | Delete a session |
 
@@ -137,13 +138,25 @@ The token is signed with HMAC-SHA256 and carries the user id as its subject. It 
 
 Any failed attempt returns `401 Unauthorized` with the same body — an unknown email and a wrong password are indistinguishable, so the endpoint cannot be used to discover which addresses are registered.
 
+### Current User
+`GET /api/users/me`
+
+Returns the user the token belongs to, in the same shape as registration:
+```json
+{
+    "id": "4806fa92-f38a-4eb1-886e-aaa0090d1d1d",
+    "email": "atleta@matlift.com"
+}
+```
+
 ### Create Workout Session
 `POST /api/workouts`
+
+The session always belongs to the authenticated user. There is no `userId` field — the owner comes from the token, so a client cannot log sessions on someone else's behalf.
 
 **Request Body:**
 ```json
 {
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
     "sessionDate": "2026-07-24T18:30:00Z",
     "category": "CONTACT_SPORT",
     "activityName": "BJJ Gi",
@@ -169,9 +182,9 @@ Any failed attempt returns `401 Unauthorized` with the same body — an unknown 
 ```
 
 ### List Workout Sessions
-`GET /api/workouts?userId={uuid}&from={iso}&to={iso}&page=0&size=20`
+`GET /api/workouts?from={iso}&to={iso}&page=0&size=20`
 
-`userId` is required; `from` and `to` are optional and may be used independently. Results are ordered by `sessionDate` descending.
+Lists only the authenticated user's own sessions. `from` and `to` are optional and may be used independently. Results are ordered by `sessionDate` descending.
 
 ```json
 {
@@ -186,10 +199,12 @@ Any failed attempt returns `401 Unauthorized` with the same body — an unknown 
 ### Update Workout Session
 `PUT /api/workouts/{id}`
 
-Same body as `POST` but **without** `userId` — a session's owner never changes. `internalLoad` is recalculated from the new duration and RPE.
+Same body as `POST` — a session's owner never changes. `internalLoad` is recalculated from the new duration and RPE.
 
 ### Delete Workout Session
-`DELETE /api/workouts/{id}` — returns `204 No Content`, or `404` if the session does not exist.
+`DELETE /api/workouts/{id}` — returns `204 No Content`.
+
+`GET`, `PUT` and `DELETE` on `/api/workouts/{id}` only reach sessions owned by the authenticated user. A session belonging to somebody else returns the same `404` as one that does not exist, so the API cannot be used to find out which session ids are real.
 
 **Error responses:**
 
@@ -197,5 +212,6 @@ Same body as `POST` but **without** `userId` — a session's owner never changes
 | --- | --- | --- |
 | 400 Bad Request | Missing required field | `{"error": "Validation failed", "fields": {"rpe": "is required"}}` |
 | 400 Bad Request | Business rule violated | `{"error": "RPE must be between 1 and 10"}` |
-| 404 Not Found | `userId` does not exist | `{"error": "User <id> does not exist"}` |
+| 401 Unauthorized | Missing, malformed or expired token | `{"error": "Authentication required"}` |
+| 404 Not Found | Session unknown, or owned by another user | `{"error": "Workout session <id> does not exist"}` |
 | 409 Conflict | Database constraint violated | `{"error": "Request violates a data integrity constraint"}` |

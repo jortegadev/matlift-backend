@@ -17,8 +17,8 @@ public class DeleteWorkoutSessionService implements DeleteWorkoutSessionUseCase 
     }
 
     @Override
-    public void execute(UUID id) {
-        if (!repository.existsById(id)) {
+    public void execute(UUID id, UUID requesterId) {
+        if (!repository.existsByIdAndUserId(id, requesterId)) {
             throw new WorkoutSessionNotFoundException(id);
         }
 

@@ -43,10 +43,10 @@ class UpdateWorkoutSessionServiceTest {
         );
 
         UpdateWorkoutSessionCommand command = new UpdateWorkoutSessionCommand(
-                id, ZonedDateTime.now(), SessionCategory.CARDIO, "Running", 30, 6, "updated"
+                id, ownerId, ZonedDateTime.now(), SessionCategory.CARDIO, "Running", 30, 6, "updated"
         );
 
-        when(repositoryMock.findById(id)).thenReturn(Optional.of(existing));
+        when(repositoryMock.findByIdAndUserId(id, ownerId)).thenReturn(Optional.of(existing));
         when(repositoryMock.save(any(WorkoutSession.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -66,12 +66,13 @@ class UpdateWorkoutSessionServiceTest {
     @Test
     void shouldThrowAndNotSaveWhenSessionDoesNotExist() {
         UUID unknownId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
         UpdateWorkoutSessionCommand command = new UpdateWorkoutSessionCommand(
-                unknownId, ZonedDateTime.now(), SessionCategory.CARDIO, "Running", 30, 6, null
+                unknownId, requesterId, ZonedDateTime.now(), SessionCategory.CARDIO, "Running", 30, 6, null
         );
 
-        when(repositoryMock.findById(unknownId)).thenReturn(Optional.empty());
+        when(repositoryMock.findByIdAndUserId(unknownId, requesterId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.execute(command))
                 .isInstanceOf(WorkoutSessionNotFoundException.class);

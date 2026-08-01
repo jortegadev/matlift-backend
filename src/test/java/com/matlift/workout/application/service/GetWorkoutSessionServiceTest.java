@@ -28,25 +28,27 @@ class GetWorkoutSessionServiceTest {
     private GetWorkoutSessionService service;
 
     @Test
-    void shouldReturnSessionWhenItExists() {
+    void shouldReturnSessionWhenItBelongsToTheRequester() {
         UUID id = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
         WorkoutSession session = new WorkoutSession(
-                id, UUID.randomUUID(), ZonedDateTime.now(), SessionCategory.CONTACT_SPORT,
+                id, ownerId, ZonedDateTime.now(), SessionCategory.CONTACT_SPORT,
                 "BJJ", 90, 8, null
         );
 
-        when(repositoryMock.findById(id)).thenReturn(Optional.of(session));
+        when(repositoryMock.findByIdAndUserId(id, ownerId)).thenReturn(Optional.of(session));
 
-        assertThat(service.execute(id)).isSameAs(session);
+        assertThat(service.execute(id, ownerId)).isSameAs(session);
     }
 
     @Test
     void shouldThrowWhenSessionDoesNotExist() {
         UUID unknownId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-        when(repositoryMock.findById(unknownId)).thenReturn(Optional.empty());
+        when(repositoryMock.findByIdAndUserId(unknownId, requesterId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.execute(unknownId))
+        assertThatThrownBy(() -> service.execute(unknownId, requesterId))
                 .isInstanceOf(WorkoutSessionNotFoundException.class)
                 .hasMessageContaining(unknownId.toString());
     }

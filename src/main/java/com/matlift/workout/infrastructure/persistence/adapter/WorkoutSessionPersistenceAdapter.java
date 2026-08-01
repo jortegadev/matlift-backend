@@ -42,8 +42,8 @@ public class WorkoutSessionPersistenceAdapter implements WorkoutSessionRepositor
     }
 
     @Override
-    public Optional<WorkoutSession> findById(UUID id) {
-        return repository.findById(id)
+    public Optional<WorkoutSession> findByIdAndUserId(UUID id, UUID userId) {
+        return repository.findByIdAndUserId(id, userId)
                 .map(mapper::toDomain);
     }
 
@@ -62,8 +62,8 @@ public class WorkoutSessionPersistenceAdapter implements WorkoutSessionRepositor
     }
 
     @Override
-    public boolean existsById(UUID id) {
-        return repository.existsById(id);
+    public boolean existsByIdAndUserId(UUID id, UUID userId) {
+        return repository.existsByIdAndUserId(id, userId);
     }
 
     @Override

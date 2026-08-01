@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record UpdateWorkoutSessionCommand(
         UUID id,
+        UUID requesterId,
         ZonedDateTime sessionDate,
         SessionCategory category,
         String activityName,

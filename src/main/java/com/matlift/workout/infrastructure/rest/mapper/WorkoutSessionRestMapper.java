@@ -14,10 +14,12 @@ import java.util.UUID;
 @Mapper(componentModel = "spring")
 public interface WorkoutSessionRestMapper {
 
-    SaveWorkoutSessionCommand toCommand(WorkoutSessionRequest request);
+    @Mapping(target = "userId", source = "userId")
+    SaveWorkoutSessionCommand toCommand(WorkoutSessionRequest request, UUID userId);
 
     @Mapping(target = "id", source = "id")
-    UpdateWorkoutSessionCommand toUpdateCommand(UUID id, UpdateWorkoutSessionRequest request);
+    @Mapping(target = "requesterId", source = "requesterId")
+    UpdateWorkoutSessionCommand toUpdateCommand(UUID id, UUID requesterId, UpdateWorkoutSessionRequest request);
 
     WorkoutSessionResponse toResponse(WorkoutSession domain);
 }

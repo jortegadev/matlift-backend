@@ -78,6 +78,13 @@ class ApiSecurityTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void shouldRejectCurrentUserRequestsWithoutToken() throws Exception {
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
+    }
+
+    @Test
     void shouldAcceptWorkoutRequestsCarryingAValidToken() throws Exception {
         mockMvc.perform(get("/api/workouts/{id}", UUID.randomUUID())
                         .header(HttpHeaders.AUTHORIZATION, bearerTokenFor(UUID.randomUUID())))

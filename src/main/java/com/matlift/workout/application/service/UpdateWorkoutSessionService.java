@@ -18,7 +18,7 @@ public class UpdateWorkoutSessionService implements UpdateWorkoutSessionUseCase 
 
     @Override
     public WorkoutSession execute(UpdateWorkoutSessionCommand command) {
-        WorkoutSession existing = repository.findById(command.id())
+        WorkoutSession existing = repository.findByIdAndUserId(command.id(), command.requesterId())
                 .orElseThrow(() -> new WorkoutSessionNotFoundException(command.id()));
 
         WorkoutSession updated = new WorkoutSession(

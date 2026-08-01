@@ -10,11 +10,11 @@ import java.util.UUID;
 public interface WorkoutSessionRepository {
     WorkoutSession save(WorkoutSession session);
 
-    Optional<WorkoutSession> findById(UUID id);
+    Optional<WorkoutSession> findByIdAndUserId(UUID id, UUID userId);
 
     PagedResult<WorkoutSession> findByUser(UUID userId, ZonedDateTime from, ZonedDateTime to, int page, int size);
 
-    boolean existsById(UUID id);
+    boolean existsByIdAndUserId(UUID id, UUID userId);
 
     void deleteById(UUID id);
 }

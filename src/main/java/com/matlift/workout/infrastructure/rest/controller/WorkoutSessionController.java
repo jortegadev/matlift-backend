@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -57,27 +58,31 @@ public class WorkoutSessionController {
     }
 
     @PostMapping
-    public ResponseEntity<WorkoutSessionResponse> saveWorkout(@Valid @RequestBody WorkoutSessionRequest request) {
-        WorkoutSession savedSession = saveWorkoutSessionUseCase.execute(mapper.toCommand(request));
+    public ResponseEntity<WorkoutSessionResponse> saveWorkout(@Valid @RequestBody WorkoutSessionRequest request,
+                                                              Principal principal) {
+        WorkoutSession savedSession =
+                saveWorkoutSessionUseCase.execute(mapper.toCommand(request, requesterId(principal)));
 
         return new ResponseEntity<>(mapper.toResponse(savedSession), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<WorkoutSessionResponse> getWorkout(@PathVariable UUID id) {
-        return ResponseEntity.ok(mapper.toResponse(getWorkoutSessionUseCase.execute(id)));
+    public ResponseEntity<WorkoutSessionResponse> getWorkout(@PathVariable UUID id, Principal principal) {
+        WorkoutSession session = getWorkoutSessionUseCase.execute(id, requesterId(principal));
+
+        return ResponseEntity.ok(mapper.toResponse(session));
     }
 
     @GetMapping
     public ResponseEntity<PagedResponse<WorkoutSessionResponse>> findWorkouts(
-            @RequestParam UUID userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime to,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            Principal principal) {
 
-        PagedResult<WorkoutSession> result =
-                findWorkoutSessionsUseCase.execute(new FindWorkoutSessionsQuery(userId, from, to, page, size));
+        PagedResult<WorkoutSession> result = findWorkoutSessionsUseCase.execute(
+                new FindWorkoutSessionsQuery(requesterId(principal), from, to, page, size));
 
         List<WorkoutSessionResponse> content = result.content().stream()
                 .map(mapper::toResponse)
@@ -89,16 +94,22 @@ public class WorkoutSessionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<WorkoutSessionResponse> updateWorkout(@PathVariable UUID id,
-                                                                @Valid @RequestBody UpdateWorkoutSessionRequest request) {
-        WorkoutSession updatedSession = updateWorkoutSessionUseCase.execute(mapper.toUpdateCommand(id, request));
+                                                                @Valid @RequestBody UpdateWorkoutSessionRequest request,
+                                                                Principal principal) {
+        WorkoutSession updatedSession =
+                updateWorkoutSessionUseCase.execute(mapper.toUpdateCommand(id, requesterId(principal), request));
 
         return ResponseEntity.ok(mapper.toResponse(updatedSession));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteWorkout(@PathVariable UUID id) {
-        deleteWorkoutSessionUseCase.execute(id);
+    public ResponseEntity<Void> deleteWorkout(@PathVariable UUID id, Principal principal) {
+        deleteWorkoutSessionUseCase.execute(id, requesterId(principal));
 
         return ResponseEntity.noContent().build();
+    }
+
+    private UUID requesterId(Principal principal) {
+        return UUID.fromString(principal.getName());
     }
 }
