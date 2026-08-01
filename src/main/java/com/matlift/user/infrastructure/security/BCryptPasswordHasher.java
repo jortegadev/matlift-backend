@@ -14,4 +14,13 @@ public class BCryptPasswordHasher implements PasswordHasher {
     public String hash(RawPassword rawPassword) {
         return encoder.encode(rawPassword.value());
     }
+
+    @Override
+    public boolean matches(String candidatePassword, String passwordHash) {
+        if (candidatePassword == null || passwordHash == null) {
+            return false;
+        }
+
+        return encoder.matches(candidatePassword, passwordHash);
+    }
 }

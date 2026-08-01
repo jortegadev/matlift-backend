@@ -7,6 +7,7 @@ import com.matlift.user.infrastructure.persistence.UserEntity;
 import com.matlift.user.infrastructure.persistence.mapper.UserPersistenceMapper;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -28,6 +29,16 @@ public class UserPersistenceAdapter implements UserRepository {
     @Override
     public boolean existsByEmail(String email) {
         return repository.existsByEmail(email);
+    }
+
+    @Override
+    public Optional<User> findById(UUID id) {
+        return repository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return repository.findByEmail(email).map(mapper::toDomain);
     }
 
     @Override

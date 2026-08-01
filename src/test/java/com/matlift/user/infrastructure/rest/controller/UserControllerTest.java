@@ -1,9 +1,11 @@
 package com.matlift.user.infrastructure.rest.controller;
 
 import com.matlift.user.domain.exception.UserAlreadyExistsException;
+import com.matlift.user.domain.exception.UserNotFoundException;
 import com.matlift.user.domain.model.User;
 import com.matlift.user.domain.port.in.CreateUserCommand;
 import com.matlift.user.domain.port.in.CreateUserUseCase;
+import com.matlift.user.domain.port.in.GetCurrentUserUseCase;
 import com.matlift.user.infrastructure.rest.mapper.UserRestMapperImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +15,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.security.Principal;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,6 +44,9 @@ class UserControllerTest {
 
     @MockitoBean
     private CreateUserUseCase createUserUseCase;
+
+    @MockitoBean
+    private GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Test
     void shouldReturn201WithCreatedUser() throws Exception {
@@ -133,5 +140,34 @@ class UserControllerTest {
                         .content(invalidEmail))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Email format is invalid"));
+    }
+
+    @Test
+    void shouldReturn200WithTheAuthenticatedUser() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(getCurrentUserUseCase.execute(id)).thenReturn(new User(id, "atleta@matlift.com", "bcrypt-hash"));
+
+        mockMvc.perform(get("/api/users/me").principal(principalFor(id)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.email").value("atleta@matlift.com"))
+                .andExpect(jsonPath("$.password").doesNotExist())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+    }
+
+    @Test
+    void shouldReturn404WhenAuthenticatedUserNoLongerExists() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        when(getCurrentUserUseCase.execute(id)).thenThrow(new UserNotFoundException(id));
+
+        mockMvc.perform(get("/api/users/me").principal(principalFor(id)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("User " + id + " does not exist"));
+    }
+
+    private Principal principalFor(UUID id) {
+        return id::toString;
     }
 }

@@ -25,12 +25,13 @@ class DeleteWorkoutSessionServiceTest {
     private DeleteWorkoutSessionService service;
 
     @Test
-    void shouldDeleteWhenSessionExists() {
+    void shouldDeleteWhenSessionBelongsToTheRequester() {
         UUID id = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-        when(repositoryMock.existsById(id)).thenReturn(true);
+        when(repositoryMock.existsByIdAndUserId(id, requesterId)).thenReturn(true);
 
-        service.execute(id);
+        service.execute(id, requesterId);
 
         verify(repositoryMock).deleteById(id);
     }
@@ -38,10 +39,11 @@ class DeleteWorkoutSessionServiceTest {
     @Test
     void shouldThrowAndNotDeleteWhenSessionDoesNotExist() {
         UUID unknownId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-        when(repositoryMock.existsById(unknownId)).thenReturn(false);
+        when(repositoryMock.existsByIdAndUserId(unknownId, requesterId)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.execute(unknownId))
+        assertThatThrownBy(() -> service.execute(unknownId, requesterId))
                 .isInstanceOf(WorkoutSessionNotFoundException.class);
 
         verify(repositoryMock, never()).deleteById(unknownId);

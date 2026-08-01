@@ -18,8 +18,8 @@ public class GetWorkoutSessionService implements GetWorkoutSessionUseCase {
     }
 
     @Override
-    public WorkoutSession execute(UUID id) {
-        return repository.findById(id)
+    public WorkoutSession execute(UUID id, UUID requesterId) {
+        return repository.findByIdAndUserId(id, requesterId)
                 .orElseThrow(() -> new WorkoutSessionNotFoundException(id));
     }
 }

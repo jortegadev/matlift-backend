@@ -40,11 +40,14 @@ The project utilizes a package structure based on Clean/Hexagonal Architecture, 
 git clone https://github.com/jortegadev/matlift-backend.git
 ```
 
-2. `application.yml` points at `jdbc:postgresql://localhost:5432/matlift_db` and reads credentials from environment variables:
+2. `application.yml` points at `jdbc:postgresql://localhost:5432/matlift_db` and reads credentials and the JWT signing secret from environment variables:
 ```bash
 export DB_USERNAME=your_username
 export DB_PASSWORD=your_password
+export JWT_SECRET=at-least-32-bytes-long-random-secret
 ```
+
+`JWT_SECRET` has no default on purpose — a signing secret committed to the repository would let anyone forge tokens. It must be at least 32 bytes, as required by HMAC-SHA256, and the application refuses to start otherwise.
 
 3. Run the application. Flyway applies the schema migrations from `src/main/resources/db/migration` automatically on startup:
 ```bash
@@ -69,12 +72,22 @@ mvn test
 
 ## API Documentation
 
+Only `POST /api/users` and `POST /api/auth/login` are public. Every other endpoint requires the access token from login:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+A missing, malformed or expired token returns `401 Unauthorized` with `{"error": "Authentication required"}`.
+
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/users` | Register a user |
+| `GET` | `/api/users/me` | Fetch the authenticated user |
+| `POST` | `/api/auth/login` | Exchange credentials for an access token |
 | `POST` | `/api/workouts` | Create a workout session |
 | `GET` | `/api/workouts/{id}` | Fetch a single session |
-| `GET` | `/api/workouts` | List a user's sessions, paginated and newest first |
+| `GET` | `/api/workouts` | List your own sessions, paginated and newest first |
 | `PUT` | `/api/workouts/{id}` | Replace a session's data |
 | `DELETE` | `/api/workouts/{id}` | Delete a session |
 
@@ -101,13 +114,49 @@ Passwords must be at least 8 characters and are stored as a BCrypt hash — neve
 
 Returns `409 Conflict` if the email is already registered.
 
-### Create Workout Session
-`POST /api/workouts`
+### Login
+`POST /api/auth/login`
 
 **Request Body:**
 ```json
 {
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "atleta@matlift.com",
+    "password": "supersecret"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresAt": "2026-07-31T14:38:58Z"
+}
+```
+
+The token is signed with HMAC-SHA256 and carries the user id as its subject. It is valid for 24 hours; there is no refresh token, so clients log in again once it expires.
+
+Any failed attempt returns `401 Unauthorized` with the same body — an unknown email and a wrong password are indistinguishable, so the endpoint cannot be used to discover which addresses are registered.
+
+### Current User
+`GET /api/users/me`
+
+Returns the user the token belongs to, in the same shape as registration:
+```json
+{
+    "id": "4806fa92-f38a-4eb1-886e-aaa0090d1d1d",
+    "email": "atleta@matlift.com"
+}
+```
+
+### Create Workout Session
+`POST /api/workouts`
+
+The session always belongs to the authenticated user. There is no `userId` field — the owner comes from the token, so a client cannot log sessions on someone else's behalf.
+
+**Request Body:**
+```json
+{
     "sessionDate": "2026-07-24T18:30:00Z",
     "category": "CONTACT_SPORT",
     "activityName": "BJJ Gi",
@@ -133,9 +182,9 @@ Returns `409 Conflict` if the email is already registered.
 ```
 
 ### List Workout Sessions
-`GET /api/workouts?userId={uuid}&from={iso}&to={iso}&page=0&size=20`
+`GET /api/workouts?from={iso}&to={iso}&page=0&size=20`
 
-`userId` is required; `from` and `to` are optional and may be used independently. Results are ordered by `sessionDate` descending.
+Lists only the authenticated user's own sessions. `from` and `to` are optional and may be used independently. Results are ordered by `sessionDate` descending.
 
 ```json
 {
@@ -150,10 +199,12 @@ Returns `409 Conflict` if the email is already registered.
 ### Update Workout Session
 `PUT /api/workouts/{id}`
 
-Same body as `POST` but **without** `userId` — a session's owner never changes. `internalLoad` is recalculated from the new duration and RPE.
+Same body as `POST` — a session's owner never changes. `internalLoad` is recalculated from the new duration and RPE.
 
 ### Delete Workout Session
-`DELETE /api/workouts/{id}` — returns `204 No Content`, or `404` if the session does not exist.
+`DELETE /api/workouts/{id}` — returns `204 No Content`.
+
+`GET`, `PUT` and `DELETE` on `/api/workouts/{id}` only reach sessions owned by the authenticated user. A session belonging to somebody else returns the same `404` as one that does not exist, so the API cannot be used to find out which session ids are real.
 
 **Error responses:**
 
@@ -161,5 +212,6 @@ Same body as `POST` but **without** `userId` — a session's owner never changes
 | --- | --- | --- |
 | 400 Bad Request | Missing required field | `{"error": "Validation failed", "fields": {"rpe": "is required"}}` |
 | 400 Bad Request | Business rule violated | `{"error": "RPE must be between 1 and 10"}` |
-| 404 Not Found | `userId` does not exist | `{"error": "User <id> does not exist"}` |
+| 401 Unauthorized | Missing, malformed or expired token | `{"error": "Authentication required"}` |
+| 404 Not Found | Session unknown, or owned by another user | `{"error": "Workout session <id> does not exist"}` |
 | 409 Conflict | Database constraint violated | `{"error": "Request violates a data integrity constraint"}` |

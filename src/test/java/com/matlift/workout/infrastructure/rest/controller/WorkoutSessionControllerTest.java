@@ -15,6 +15,7 @@ import com.matlift.workout.domain.port.in.UpdateWorkoutSessionCommand;
 import com.matlift.workout.domain.port.in.UpdateWorkoutSessionUseCase;
 import com.matlift.workout.infrastructure.rest.mapper.WorkoutSessionRestMapperImpl;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -22,10 +23,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.security.Principal;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,7 +47,6 @@ class WorkoutSessionControllerTest {
 
     private static final String VALID_BODY = """
             {
-                "userId": "123e4567-e89b-12d3-a456-426614174000",
                 "sessionDate": "2026-07-24T18:30:00Z",
                 "category": "STRENGTH",
                 "activityName": "Workout",
@@ -73,16 +76,18 @@ class WorkoutSessionControllerTest {
 
     @Test
     void shouldReturn201WithFullRepresentationWhenWorkoutIsValid() throws Exception {
-        WorkoutSession saved = session(UUID.randomUUID());
+        UUID requesterId = UUID.randomUUID();
+        WorkoutSession saved = session(UUID.randomUUID(), requesterId);
 
         when(saveWorkoutSessionUseCase.execute(any(SaveWorkoutSessionCommand.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/workouts")
+                        .principal(principalFor(requesterId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_BODY))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
-                .andExpect(jsonPath("$.userId").value(saved.getUserId().toString()))
+                .andExpect(jsonPath("$.userId").value(requesterId.toString()))
                 .andExpect(jsonPath("$.category").value("CONTACT_SPORT"))
                 .andExpect(jsonPath("$.activityName").value("BJJ Gi"))
                 .andExpect(jsonPath("$.durationMinutes").value(90))
@@ -92,11 +97,31 @@ class WorkoutSessionControllerTest {
     }
 
     @Test
+    void shouldTakeTheOwnerFromTheTokenNotFromTheBody() throws Exception {
+        UUID requesterId = UUID.randomUUID();
+
+        when(saveWorkoutSessionUseCase.execute(any(SaveWorkoutSessionCommand.class)))
+                .thenReturn(session(UUID.randomUUID(), requesterId));
+
+        mockMvc.perform(post("/api/workouts")
+                        .principal(principalFor(requesterId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<SaveWorkoutSessionCommand> captor = ArgumentCaptor.forClass(SaveWorkoutSessionCommand.class);
+        verify(saveWorkoutSessionUseCase).execute(captor.capture());
+
+        assertThat(captor.getValue().userId()).isEqualTo(requesterId);
+    }
+
+    @Test
     void shouldReturn400WhenDomainThrowsException() throws Exception {
         when(saveWorkoutSessionUseCase.execute(any(SaveWorkoutSessionCommand.class)))
                 .thenThrow(new IllegalArgumentException("RPE must be between 1 and 10"));
 
         mockMvc.perform(post("/api/workouts")
+                        .principal(principalFor(UUID.randomUUID()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_BODY))
                 .andExpect(status().isBadRequest())
@@ -107,7 +132,6 @@ class WorkoutSessionControllerTest {
     void shouldReturn400WithFieldErrorsWhenRequiredFieldsAreMissing() throws Exception {
         String jsonWithoutRpeAndDuration = """
                 {
-                    "userId": "123e4567-e89b-12d3-a456-426614174000",
                     "sessionDate": "2026-07-24T18:30:00Z",
                     "category": "STRENGTH",
                     "activityName": "Workout"
@@ -115,6 +139,7 @@ class WorkoutSessionControllerTest {
                 """;
 
         mockMvc.perform(post("/api/workouts")
+                        .principal(principalFor(UUID.randomUUID()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonWithoutRpeAndDuration))
                 .andExpect(status().isBadRequest())
@@ -126,74 +151,75 @@ class WorkoutSessionControllerTest {
     }
 
     @Test
-    void shouldReturn404WhenUserDoesNotExist() throws Exception {
-        UUID unknownUserId = UUID.randomUUID();
+    void shouldReturn404WhenAuthenticatedUserNoLongerExists() throws Exception {
+        UUID requesterId = UUID.randomUUID();
 
         when(saveWorkoutSessionUseCase.execute(any(SaveWorkoutSessionCommand.class)))
-                .thenThrow(new UserNotFoundException(unknownUserId));
+                .thenThrow(new UserNotFoundException(requesterId));
 
         mockMvc.perform(post("/api/workouts")
+                        .principal(principalFor(requesterId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_BODY))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("User " + unknownUserId + " does not exist"));
+                .andExpect(jsonPath("$.error").value("User " + requesterId + " does not exist"));
     }
 
     @Test
     void shouldReturn200WhenGettingExistingWorkout() throws Exception {
         UUID id = UUID.randomUUID();
-        WorkoutSession existing = session(id);
+        UUID requesterId = UUID.randomUUID();
+        WorkoutSession existing = session(id, requesterId);
 
-        when(getWorkoutSessionUseCase.execute(id)).thenReturn(existing);
+        when(getWorkoutSessionUseCase.execute(id, requesterId)).thenReturn(existing);
 
-        mockMvc.perform(get("/api/workouts/{id}", id))
+        mockMvc.perform(get("/api/workouts/{id}", id).principal(principalFor(requesterId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.internalLoad").value(720));
     }
 
     @Test
-    void shouldReturn404WhenGettingUnknownWorkout() throws Exception {
+    void shouldReturn404WhenGettingUnknownOrSomeoneElsesWorkout() throws Exception {
         UUID unknownId = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-        when(getWorkoutSessionUseCase.execute(unknownId))
+        when(getWorkoutSessionUseCase.execute(unknownId, requesterId))
                 .thenThrow(new WorkoutSessionNotFoundException(unknownId));
 
-        mockMvc.perform(get("/api/workouts/{id}", unknownId))
+        mockMvc.perform(get("/api/workouts/{id}", unknownId).principal(principalFor(requesterId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Workout session " + unknownId + " does not exist"));
     }
 
     @Test
-    void shouldReturnPagedListOfWorkouts() throws Exception {
-        UUID userId = UUID.randomUUID();
+    void shouldReturnPagedListOfWorkoutsForTheAuthenticatedUser() throws Exception {
+        UUID requesterId = UUID.randomUUID();
         PagedResult<WorkoutSession> pagedResult =
-                new PagedResult<>(List.of(session(UUID.randomUUID())), 0, 20, 1, 1);
+                new PagedResult<>(List.of(session(UUID.randomUUID(), requesterId)), 0, 20, 1, 1);
 
         when(findWorkoutSessionsUseCase.execute(any(FindWorkoutSessionsQuery.class))).thenReturn(pagedResult);
 
-        mockMvc.perform(get("/api/workouts").param("userId", userId.toString()))
+        mockMvc.perform(get("/api/workouts").principal(principalFor(requesterId)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.content[0].activityName").value("BJJ Gi"))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.totalPages").value(1));
-    }
 
-    @Test
-    void shouldReturn400WhenListingWithoutUserId() throws Exception {
-        mockMvc.perform(get("/api/workouts"))
-                .andExpect(status().isBadRequest());
+        ArgumentCaptor<FindWorkoutSessionsQuery> captor = ArgumentCaptor.forClass(FindWorkoutSessionsQuery.class);
+        verify(findWorkoutSessionsUseCase).execute(captor.capture());
 
-        verify(findWorkoutSessionsUseCase, never()).execute(any(FindWorkoutSessionsQuery.class));
+        assertThat(captor.getValue().userId()).isEqualTo(requesterId);
     }
 
     @Test
     void shouldReturn200WhenUpdatingExistingWorkout() throws Exception {
         UUID id = UUID.randomUUID();
-        WorkoutSession updated = session(id);
+        UUID requesterId = UUID.randomUUID();
+        WorkoutSession updated = session(id, requesterId);
 
         when(updateWorkoutSessionUseCase.execute(any(UpdateWorkoutSessionCommand.class))).thenReturn(updated);
 
@@ -209,6 +235,7 @@ class WorkoutSessionControllerTest {
                 """;
 
         mockMvc.perform(put("/api/workouts/{id}", id)
+                        .principal(principalFor(requesterId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateBody))
                 .andExpect(status().isOk())
@@ -217,7 +244,7 @@ class WorkoutSessionControllerTest {
     }
 
     @Test
-    void shouldReturn404WhenUpdatingUnknownWorkout() throws Exception {
+    void shouldReturn404WhenUpdatingUnknownOrSomeoneElsesWorkout() throws Exception {
         UUID unknownId = UUID.randomUUID();
 
         when(updateWorkoutSessionUseCase.execute(any(UpdateWorkoutSessionCommand.class)))
@@ -234,6 +261,7 @@ class WorkoutSessionControllerTest {
                 """;
 
         mockMvc.perform(put("/api/workouts/{id}", unknownId)
+                        .principal(principalFor(UUID.randomUUID()))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updateBody))
                 .andExpect(status().isNotFound());
@@ -242,17 +270,22 @@ class WorkoutSessionControllerTest {
     @Test
     void shouldReturn204WhenDeletingWorkout() throws Exception {
         UUID id = UUID.randomUUID();
+        UUID requesterId = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/workouts/{id}", id))
+        mockMvc.perform(delete("/api/workouts/{id}", id).principal(principalFor(requesterId)))
                 .andExpect(status().isNoContent());
 
-        verify(deleteWorkoutSessionUseCase).execute(id);
+        verify(deleteWorkoutSessionUseCase).execute(id, requesterId);
     }
 
-    private WorkoutSession session(UUID id) {
+    private WorkoutSession session(UUID id, UUID userId) {
         return new WorkoutSession(
-                id, UUID.randomUUID(), ZonedDateTime.parse("2026-07-24T18:30:00Z"),
+                id, userId, ZonedDateTime.parse("2026-07-24T18:30:00Z"),
                 SessionCategory.CONTACT_SPORT, "BJJ Gi", 90, 8, "Guard passing"
         );
+    }
+
+    private Principal principalFor(UUID id) {
+        return id::toString;
     }
 }

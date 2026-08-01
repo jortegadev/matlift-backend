@@ -38,11 +38,25 @@ class WorkoutSessionPersistenceAdapterTest extends AbstractIntegrationTest {
 
         assertThat(savedSession.getId()).isNotNull();
 
-        Optional<WorkoutSession> retrievedSession = adapter.findById(savedSession.getId());
+        Optional<WorkoutSession> retrievedSession = adapter.findByIdAndUserId(savedSession.getId(), userId);
 
         assertThat(retrievedSession).isPresent();
         assertThat(retrievedSession.get().getActivityName()).isEqualTo("BJJ NoGi");
         assertThat(retrievedSession.get().getInternalLoad()).isEqualTo(960);
+    }
+
+    @Test
+    void shouldNotRetrieveOrReportExistenceOfAnotherUsersSession() {
+        UUID ownerId = createTestUser();
+        UUID someoneElseId = createTestUser();
+
+        WorkoutSession saved = adapter.save(newSession(ownerId, ZonedDateTime.now()));
+
+        assertThat(adapter.findByIdAndUserId(saved.getId(), someoneElseId)).isEmpty();
+        assertThat(adapter.existsByIdAndUserId(saved.getId(), someoneElseId)).isFalse();
+
+        assertThat(adapter.findByIdAndUserId(saved.getId(), ownerId)).isPresent();
+        assertThat(adapter.existsByIdAndUserId(saved.getId(), ownerId)).isTrue();
     }
 
     @Test
@@ -51,12 +65,12 @@ class WorkoutSessionPersistenceAdapterTest extends AbstractIntegrationTest {
 
         WorkoutSession saved = adapter.save(newSession(userId, ZonedDateTime.now()));
 
-        assertThat(adapter.existsById(saved.getId())).isTrue();
+        assertThat(adapter.existsByIdAndUserId(saved.getId(), userId)).isTrue();
 
         adapter.deleteById(saved.getId());
 
-        assertThat(adapter.existsById(saved.getId())).isFalse();
-        assertThat(adapter.findById(saved.getId())).isEmpty();
+        assertThat(adapter.existsByIdAndUserId(saved.getId(), userId)).isFalse();
+        assertThat(adapter.findByIdAndUserId(saved.getId(), userId)).isEmpty();
     }
 
     @Test
