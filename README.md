@@ -72,6 +72,14 @@ mvn test
 
 ## API Documentation
 
+Only `POST /api/users` and `POST /api/auth/login` are public. Every other endpoint requires the access token from login:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+A missing, malformed or expired token returns `401 Unauthorized` with `{"error": "Authentication required"}`.
+
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/users` | Register a user |

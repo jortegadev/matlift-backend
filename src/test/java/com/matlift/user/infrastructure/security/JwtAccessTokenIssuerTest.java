@@ -23,12 +23,14 @@ class JwtAccessTokenIssuerTest {
     private static final String SECRET = "test-only-secret-that-is-long-enough-for-hmac-sha256";
     private static final Duration EXPIRY = Duration.ofHours(24);
 
-    private final JwtAccessTokenIssuer issuer = new JwtAccessTokenIssuer(SECRET, EXPIRY);
+    private final JwtAccessTokenIssuer issuer = new JwtAccessTokenIssuer(keyFor(SECRET), EXPIRY);
+
+    private static SecretKey keyFor(String secret) {
+        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    }
 
     private JwtDecoder decoderFor(String secret) {
-        SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-
-        return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+        return NimbusJwtDecoder.withSecretKey(keyFor(secret)).macAlgorithm(MacAlgorithm.HS256).build();
     }
 
     @Test
@@ -64,15 +66,6 @@ class JwtAccessTokenIssuerTest {
 
         assertThatThrownBy(() -> foreignDecoder.decode(tokenValue))
                 .isInstanceOf(JwtException.class);
-    }
-
-    @Test
-    void shouldRejectSecretShorterThanRequiredByHmacSha256() {
-        String shortSecret = "too-short";
-
-        assertThatThrownBy(() -> new JwtAccessTokenIssuer(shortSecret, EXPIRY))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("32 bytes");
     }
 
     @Test
