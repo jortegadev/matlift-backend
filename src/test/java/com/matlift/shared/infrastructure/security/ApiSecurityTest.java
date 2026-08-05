@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -80,6 +81,17 @@ class ApiSecurityTest extends AbstractIntegrationTest {
     @Test
     void shouldRejectCurrentUserRequestsWithoutToken() throws Exception {
         mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
+    }
+
+    @Test
+    void shouldRejectReadinessRequestsWithoutToken() throws Exception {
+        mockMvc.perform(put("/api/readiness/{date}", "2026-05-03")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sleepScore": 5, "sorenessScore": 1, "stressScore": 1}
+                                """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Authentication required"));
     }

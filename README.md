@@ -90,6 +90,7 @@ A missing, malformed or expired token returns `401 Unauthorized` with `{"error":
 | `GET` | `/api/workouts` | List your own sessions, paginated and newest first |
 | `PUT` | `/api/workouts/{id}` | Replace a session's data |
 | `DELETE` | `/api/workouts/{id}` | Delete a session |
+| `PUT` | `/api/readiness/{date}` | Record how you feel on a given day |
 
 ### Register User
 `POST /api/users`
@@ -205,6 +206,38 @@ Same body as `POST` — a session's owner never changes. `internalLoad` is recal
 `DELETE /api/workouts/{id}` — returns `204 No Content`.
 
 `GET`, `PUT` and `DELETE` on `/api/workouts/{id}` only reach sessions owned by the authenticated user. A session belonging to somebody else returns the same `404` as one that does not exist, so the API cannot be used to find out which session ids are real.
+
+### Record Daily Readiness
+`PUT /api/readiness/{date}`
+
+`{date}` is an ISO date (`2026-05-03`) and identifies the record together with the authenticated user: there is exactly one readiness record per user per day, enforced by the database. The method is `PUT` and not `POST` because sending the same day twice is a replacement, not a second record — retrying is harmless.
+
+**Request Body:**
+```json
+{
+    "sleepScore": 5,
+    "sorenessScore": 1,
+    "stressScore": 1
+}
+```
+
+All three are 1-5 and answered the natural way: `sleepScore` 5 means you slept great, while `sorenessScore` 5 means very sore and `stressScore` 5 means very stressed. The two negative ones are inverted before the calculation, so the three weigh the same.
+
+**Response (200 OK):**
+```json
+{
+    "userId": "46587abd-4161-40d8-9d00-efa7003a2c9e",
+    "recordDate": "2026-05-03",
+    "sleepScore": 5,
+    "sorenessScore": 1,
+    "stressScore": 1,
+    "readinessPercentage": 100
+}
+```
+
+`readinessPercentage` is always calculated by the server; it is never accepted from the client. The best possible day scores 100, the worst 0, and every score in the middle 50.
+
+Dates more than one day ahead return `400`. The one day of slack is deliberate: a client east of UTC can legitimately be on tomorrow's date already.
 
 **Error responses:**
 
